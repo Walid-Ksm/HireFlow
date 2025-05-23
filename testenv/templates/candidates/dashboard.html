@@ -1,0 +1,449 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Candidate Dashboard - Job Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css">
+<style>
+    .application-card {
+        transition: all 0.3s ease;
+    }
+    .application-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        cursor: pointer;
+    }
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    .progress-circle {
+        width: 120px;
+        height: 120px;
+        position: relative;
+    }
+    .progress-circle canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+    .progress-circle .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Dashboard</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'candidates:dashboard' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'candidates:profile' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user me-2"></i> My Profile
+                    </a>
+                    <a href="{% url 'candidates:applications' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-alt me-2"></i> My Applications
+                    </a>
+                    <a href="{% url 'jobs:job_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-search me-2"></i> Find Jobs
+                    </a>
+                </div>
+            </div>
+
+            <!-- Profile Stats -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Profile Completion</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Overall Progress</span>
+                            <span>{{ profile_completion }}%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: {{ profile_completion }}%" aria-valuenow="{{ profile_completion }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    <div class="small">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Complete your profile to improve chances of getting hired</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <!-- Welcome Card -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h4>Welcome, {{ candidate.user.get_full_name|default:candidate.user.username }}!</h4>
+                    <p class="mb-0">Track your job applications and manage your career journey.</p>
+                </div>
+            </div>
+
+            <!-- Verification Alert -->
+            {% if not candidate.is_email_verified %}
+            <div class="alert alert-warning mb-4" role="alert">
+                <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Email Verification Required</h5>
+                <p>Your email is not verified yet. Please check your inbox for the verification link or <a href="#" class="alert-link">click here to resend the verification email</a>.</p>
+            </div>
+            {% endif %}
+
+            <!-- Application Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="progress-circle mx-auto mb-3">
+                                <canvas id="totalApplicationsChart"></canvas>
+                                <div class="progress-text">
+                                    <h3 class="mb-0">{{ application_counts.total }}</h3>
+                                    <small class="text-muted">Total</small>
+                                </div>
+                            </div>
+                            <h6 class="text-muted">Total Applications</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="progress-circle mx-auto mb-3">
+                                <canvas id="pendingApplicationsChart"></canvas>
+                                <div class="progress-text">
+                                    <h3 class="mb-0">{{ application_counts.pending }}</h3>
+                                    <small class="text-muted">Pending</small>
+                                </div>
+                            </div>
+                            <h6 class="text-muted">Pending Applications</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="progress-circle mx-auto mb-3">
+                                <canvas id="acceptedApplicationsChart"></canvas>
+                                <div class="progress-text">
+                                    <h3 class="mb-0">{{ application_counts.accepted }}</h3>
+                                    <small class="text-muted">Accepted</small>
+                                </div>
+                            </div>
+                            <h6 class="text-muted">Accepted Applications</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="progress-circle mx-auto mb-3">
+                                <canvas id="rejectedApplicationsChart"></canvas>
+                                <div class="progress-text">
+                                    <h3 class="mb-0">{{ application_counts.rejected }}</h3>
+                                    <small class="text-muted">Rejected</small>
+                                </div>
+                            </div>
+                            <h6 class="text-muted">Rejected Applications</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Status Chart -->
+            <div class="row mb-4">
+                <div class="col-lg-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Application Status Distribution</h5>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="chartTypeBtn">Toggle Chart Type</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="applicationStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Applications -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Applications</h5>
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control form-control-sm" id="applicationSearch" placeholder="Search applications...">
+                        <select class="form-select form-select-sm" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="PE">Pending</option>
+                            <option value="RV">Reviewing</option>
+                            <option value="AC">Accepted</option>
+                            <option value="RJ">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="applicationsTable">
+                            <thead>
+                                <tr>
+                                    <th data-sort="job">Job Title</th>
+                                    <th data-sort="company">Company</th>
+                                    <th data-sort="date">Applied Date</th>
+                                    <th data-sort="status">Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for application in recent_applications %}
+                                <tr class="application-row" data-status="{{ application.status }}">
+                                    <td>
+                                        <a href="{% url 'jobs:job_detail' application.job.id %}" class="text-decoration-none">
+                                            {{ application.job.title }}
+                                        </a>
+                                    </td>
+                                    <td>{{ application.job.company_name }}</td>
+                                    <td>{{ application.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="badge status-badge {% if application.status == 'PE' %}bg-warning{% elif application.status == 'RV' %}bg-info{% elif application.status == 'AC' %}bg-success{% elif application.status == 'RJ' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                            {% if application.status == 'PE' %}Pending
+                                            {% elif application.status == 'RV' %}Reviewing
+                                            {% elif application.status == 'AC' %}Accepted
+                                            {% elif application.status == 'RJ' %}Rejected
+                                            {% else %}Waitlisted{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'candidates:application_detail' application.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-3">
+                                        <p class="text-muted mb-0">No recent applications</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Progress Circles
+    function createProgressCircle(canvasId, value, total, color) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const percentage = (value / total) * 100;
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [percentage, 100 - percentage],
+                    backgroundColor: [color, '#e9ecef'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                cutout: '80%',
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Create progress circles
+    const total = {{ application_counts.total }};
+    createProgressCircle('totalApplicationsChart', total, total, '#007bff');
+    createProgressCircle('pendingApplicationsChart', {{ application_counts.pending }}, total, '#ffc107');
+    createProgressCircle('acceptedApplicationsChart', {{ application_counts.accepted }}, total, '#28a745');
+    createProgressCircle('rejectedApplicationsChart', {{ application_counts.rejected }}, total, '#dc3545');
+
+    // Initialize Application Status Chart
+    const ctx = document.getElementById('applicationStatusChart').getContext('2d');
+    let chartType = 'doughnut';
+    
+    const applicationStatusChart = new Chart(ctx, {
+        type: chartType,
+        data: {
+            labels: ['Pending', 'Reviewing', 'Accepted', 'Rejected'],
+            datasets: [{
+                data: [
+                    {{ application_counts.pending }},
+                    {{ application_counts.reviewing }},
+                    {{ application_counts.accepted }},
+                    {{ application_counts.rejected }}
+                ],
+                backgroundColor: [
+                    '#ffc107',
+                    '#17a2b8',
+                    '#28a745',
+                    '#dc3545'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Toggle Chart Type
+    document.getElementById('chartTypeBtn').addEventListener('click', function() {
+        chartType = chartType === 'doughnut' ? 'bar' : 'doughnut';
+        applicationStatusChart.destroy();
+        applicationStatusChart = new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: ['Pending', 'Reviewing', 'Accepted', 'Rejected'],
+                datasets: [{
+                    data: [
+                        {{ application_counts.pending }},
+                        {{ application_counts.reviewing }},
+                        {{ application_counts.accepted }},
+                        {{ application_counts.rejected }}
+                    ],
+                    backgroundColor: [
+                        '#ffc107',
+                        '#17a2b8',
+                        '#28a745',
+                        '#dc3545'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    });
+
+    // Application Search and Filter
+    const applicationSearch = document.getElementById('applicationSearch');
+    const statusFilter = document.getElementById('statusFilter');
+    const applicationRows = document.querySelectorAll('.application-row');
+
+    function filterApplications() {
+        const searchTerm = applicationSearch.value.toLowerCase();
+        const statusValue = statusFilter.value;
+
+        applicationRows.forEach(row => {
+            const jobTitle = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+            const company = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            const status = row.dataset.status;
+            
+            const matchesSearch = jobTitle.includes(searchTerm) || company.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+
+            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+    }
+
+    applicationSearch.addEventListener('input', filterApplications);
+    statusFilter.addEventListener('change', filterApplications);
+
+    // Sortable Table
+    const table = document.getElementById('applicationsTable');
+    const headers = table.querySelectorAll('th[data-sort]');
+    let currentSort = {
+        column: null,
+        direction: 'asc'
+    };
+
+    headers.forEach(header => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', () => {
+            const column = header.dataset.sort;
+            const direction = currentSort.column === column && currentSort.direction === 'asc' ? 'desc' : 'asc';
+            
+            // Update sort indicators
+            headers.forEach(h => h.classList.remove('asc', 'desc'));
+            header.classList.add(direction);
+
+            // Sort rows
+            const rows = Array.from(applicationRows);
+            rows.sort((a, b) => {
+                const aValue = a.querySelector(`td:nth-child(${Array.from(header.parentNode.children).indexOf(header) + 1})`).textContent;
+                const bValue = b.querySelector(`td:nth-child(${Array.from(header.parentNode.children).indexOf(header) + 1})`).textContent;
+                
+                return direction === 'asc' ? 
+                    aValue.localeCompare(bValue) : 
+                    bValue.localeCompare(aValue);
+            });
+
+            // Reorder rows in the table
+            const tbody = table.querySelector('tbody');
+            rows.forEach(row => tbody.appendChild(row));
+
+            currentSort = { column, direction };
+        });
+    });
+
+    // Real-time Updates
+    function checkForUpdates() {
+        fetch('{% url "candidates:dashboard" %}?check_updates=true')
+            .then(response => response.json())
+            .then(data => {
+                if (data.has_updates) {
+                    location.reload();
+                }
+            });
+    }
+
+    // Check for updates every 30 seconds
+    setInterval(checkForUpdates, 30000);
+});
+</script>
+{% endblock %} 

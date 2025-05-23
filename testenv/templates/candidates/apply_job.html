@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Apply for {{ job.title }} - Job Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'jobs:home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'jobs:job_list' %}">Jobs</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'jobs:job_detail' job.id %}">{{ job.title }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Apply</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Job Details -->
+        <div class="col-lg-4 mb-4 mb-lg-0">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Job Details</h5>
+                </div>
+                <div class="card-body">
+                    <h4 class="mb-1">{{ job.title }}</h4>
+                    <h6 class="text-muted mb-3">{{ job.company_name }}</h6>
+                    
+                    <div class="mb-3">
+                        <i class="fas fa-map-marker-alt text-muted me-2"></i>{{ job.location }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <i class="fas fa-briefcase text-muted me-2"></i>{{ job.get_contract_type_display }}
+                    </div>
+                    
+                    {% if job.salary_min and job.salary_max %}
+                        <div class="mb-3">
+                            <i class="fas fa-money-bill-wave text-muted me-2"></i>${{ job.salary_min|floatformat:0 }} - ${{ job.salary_max|floatformat:0 }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if job.category %}
+                        <div class="mb-3">
+                            <i class="fas fa-tag text-muted me-2"></i>{{ job.category.name }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <i class="far fa-clock text-muted me-2"></i>Posted {{ job.created_at|timesince }} ago
+                    </div>
+                    
+                    <div class="mb-3">
+                        <i class="fas fa-hourglass-end text-muted me-2"></i>Expires {{ job.expiry_date|date:"M d, Y" }}
+                    </div>
+                    
+                    <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-outline-primary">View Full Details</a>
+                </div>
+            </div>
+            
+            <!-- Profile Completeness -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Profile Completeness</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Overall Progress</span>
+                            <span>{{ profile_completion }}%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: {{ profile_completion }}%" aria-valuenow="{{ profile_completion }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    
+                    {% if profile_completion < 100 %}
+                        <div class="alert alert-warning">
+                            <p class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Complete your profile to improve your chances!</p>
+                        </div>
+                        <a href="{% url 'candidates:edit_profile' %}" class="btn btn-outline-primary btn-sm">Complete Profile</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Application Form -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Apply for {{ job.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                        
+                        <!-- Cover Letter -->
+                        <div class="mb-4">
+                            <label for="cover_letter" class="form-label">Cover Letter <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="cover_letter" name="cover_letter" rows="8" required placeholder="Explain why you're a good fit for this position and highlight your relevant experience..."></textarea>
+                            <div class="form-text">
+                                <p class="mb-0"><i class="fas fa-lightbulb text-warning me-1"></i> Tips for a great cover letter:</p>
+                                <ul>
+                                    <li>Address why you're interested in this specific role</li>
+                                    <li>Highlight relevant experience and skills</li>
+                                    <li>Mention specific achievements that relate to this job</li>
+                                    <li>Keep it concise and professional</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Resume -->
+                        <div class="mb-4">
+                            <label for="resume" class="form-label">Resume <span class="text-danger">*</span></label>
+                            
+                            {% if candidate.resume %}
+                                <div class="alert alert-info mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-file-pdf fa-2x text-danger me-3"></i>
+                                        <div>
+                                            <p class="mb-0">Current resume: {{ candidate.resume.name }}</p>
+                                            <small>You can use your existing resume or upload a new one</small>
+                                        </div>
+                                        <div class="ms-auto form-check">
+                                            <input class="form-check-input" type="checkbox" id="use_existing_resume" name="use_existing_resume" checked>
+                                            <label class="form-check-label" for="use_existing_resume">
+                                                Use existing resume
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            <input type="file" class="form-control" id="resume" name="resume" accept=".pdf,.doc,.docx" {% if not candidate.resume %}required{% endif %}>
+                            <div class="form-text">Accepted formats: PDF, DOC, DOCX. Max file size: 5MB.</div>
+                        </div>
+                        
+                        <!-- Terms and Privacy Policy -->
+                        <div class="mb-4 form-check">
+                            <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                            <label class="form-check-label" for="terms">I agree to the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a></label>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Submit Application</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

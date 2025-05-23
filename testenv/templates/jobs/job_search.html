@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Jobs - Job Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Search Jobs</h1>
+    
+    <!-- Search Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="{% url 'jobs:job_search' %}" method="get" id="searchForm">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="keyword" class="form-label">Keywords</label>
+                        <input type="text" class="form-control" id="keyword" name="keyword" placeholder="Job title, skills, or company" value="{{ keyword }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="location" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="location" name="location" placeholder="City, state, or country" value="{{ location }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="contract_type" class="form-label">Job Type</label>
+                        <select class="form-select" id="contract_type" name="contract_type">
+                            <option value="">All Types</option>
+                            {% for type_code, type_name in contract_types %}
+                                <option value="{{ type_code }}" {% if selected_type == type_code %}selected{% endif %}>{{ type_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="min_salary" class="form-label">Min Salary</label>
+                        <input type="number" class="form-control" id="min_salary" name="min_salary" placeholder="e.g. 50000" value="{{ min_salary }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Search Jobs</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Search Results -->
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Filter Results</h5>
+                </div>
+                <div class="card-body">
+                    <form id="filterForm">
+                        <!-- Hidden inputs to preserve search terms -->
+                        <input type="hidden" name="keyword" value="{{ keyword }}">
+                        <input type="hidden" name="location" value="{{ location }}">
+                        <input type="hidden" name="category" value="{{ selected_category }}">
+                        <input type="hidden" name="min_salary" value="{{ min_salary }}">
+                        <input type="hidden" name="contract_type" value="{{ selected_type }}">
+                        
+                        <!-- Date Posted Filter -->
+                        <div class="mb-3">
+                            <label class="form-label">Date Posted</label>
+                            <div class="form-check">
+                                <input class="form-check-input filter-option" type="radio" name="date_posted" id="dateAny" value="" {% if not date_posted %}checked{% endif %}>
+                                <label class="form-check-label" for="dateAny">Any time</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input filter-option" type="radio" name="date_posted" id="dateToday" value="today" {% if date_posted == 'today' %}checked{% endif %}>
+                                <label class="form-check-label" for="dateToday">Today</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input filter-option" type="radio" name="date_posted" id="dateWeek" value="week" {% if date_posted == 'week' %}checked{% endif %}>
+                                <label class="form-check-label" for="dateWeek">This week</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input filter-option" type="radio" name="date_posted" id="dateMonth" value="month" {% if date_posted == 'month' %}checked{% endif %}>
+                                <label class="form-check-label" for="dateMonth">This month</label>
+                            </div>
+                        </div>
+                        
+                        <!-- Reset Filters button -->
+                        <div class="d-grid">
+                            <a href="{% url 'jobs:job_search' %}" class="btn btn-outline-secondary">Reset Filters</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results List -->
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="fs-4 mb-0">Results: {{ jobs|length }} job{{ jobs|length|pluralize }} found</h2>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Sort by: {{ sort_display }}
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="sortDropdown">
+                        <li><a class="dropdown-item sort-option" href="#" data-sort="newest">Newest first</a></li>
+                        <li><a class="dropdown-item sort-option" href="#" data-sort="oldest">Oldest first</a></li>
+                        <li><a class="dropdown-item sort-option" href="#" data-sort="salary_high">Highest salary</a></li>
+                        <li><a class="dropdown-item sort-option" href="#" data-sort="salary_low">Lowest salary</a></li>
+                    </ul>
+                    <input type="hidden" name="sort" id="sortInput" value="{{ sort }}">
+                </div>
+            </div>
+            
+            <!-- Job listing -->
+            <div class="job-list" id="jobResults">
+                {% if jobs %}
+                    {% for job in jobs %}
+                        <div class="card mb-3 job-card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <h5 class="card-title mb-1">
+                                            <a href="{% url 'jobs:job_detail' job.id %}" class="text-decoration-none">{{ job.title }}</a>
+                                        </h5>
+                                        <h6 class="card-subtitle mb-2 text-muted">{{ job.company_name }}</h6>
+                                        <div class="small text-muted mb-2">
+                                            <i class="fas fa-map-marker-alt me-1"></i> {{ job.location }}
+                                            {% if job.salary_min and job.salary_max %}
+                                                <span class="ms-3"><i class="fas fa-money-bill-wave me-1"></i>${{ job.salary_min|floatformat:0 }} - ${{ job.salary_max|floatformat:0 }}</span>
+                                            {% endif %}
+                                            <span class="ms-3"><i class="far fa-clock me-1"></i>Posted {{ job.created_at|timesince }} ago</span>
+                                        </div>
+                                        <p class="card-text">{{ job.description|truncatechars:150 }}</p>
+                                    </div>
+                                    <div class="col-md-3 text-md-end mt-3 mt-md-0">
+                                        <span class="badge bg-primary mb-2 d-block d-md-inline-block">{{ job.get_contract_type_display }}</span>
+                                        <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-outline-primary btn-sm mt-2">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">No jobs found matching your criteria. Try broadening your search or <a href="{% url 'jobs:job_search' %}">reset filters</a>.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('searchForm');
+    const filterForm = document.getElementById('filterForm');
+    const filterOptions = document.querySelectorAll('.filter-option');
+    const sortOptions = document.querySelectorAll('.sort-option');
+    const sortInput = document.getElementById('sortInput');
+    const jobResults = document.getElementById('jobResults');
+    
+    // Function to update results
+    function updateResults() {
+        const formData = new FormData(searchForm);
+        const filterFormData = new FormData(filterForm);
+        
+        // Add filter form parameters
+        for (const [key, value] of filterFormData.entries()) {
+            if (value) {
+                formData.append(key, value);
+            }
+        }
+        
+        // Build query string
+        const params = new URLSearchParams();
+        for (const [key, value] of formData.entries()) {
+            if (value) {
+                params.append(key, value);
+            }
+        }
+        
+        // Show loading state
+        jobResults.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+        
+        // Update URL without page reload
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+        
+        // Fetch results
+        fetch(newUrl)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newResults = doc.getElementById('jobResults');
+                if (newResults) {
+                    jobResults.innerHTML = newResults.innerHTML;
+                } else {
+                    jobResults.innerHTML = '<div class="alert alert-danger">Error loading results. Please try again.</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                jobResults.innerHTML = '<div class="alert alert-danger">Error loading results. Please try again.</div>';
+            });
+    }
+    
+    // Handle filter changes
+    filterOptions.forEach(option => {
+        option.addEventListener('change', updateResults);
+    });
+    
+    // Handle sort changes
+    sortOptions.forEach(option => {
+        option.addEventListener('click', function(e) {
+            e.preventDefault();
+            sortInput.value = this.dataset.sort;
+            updateResults();
+        });
+    });
+    
+    // Handle form submission
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateResults();
+    });
+    
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.path) {
+            fetch(e.state.path)
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newResults = doc.getElementById('jobResults');
+                    if (newResults) {
+                        jobResults.innerHTML = newResults.innerHTML;
+                    }
+                });
+        }
+    });
+});
+</script>
+{% endblock %} 

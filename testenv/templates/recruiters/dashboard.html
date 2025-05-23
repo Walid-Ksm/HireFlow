@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recruiter Dashboard - Job Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css">
+<style>
+    .application-card {
+        transition: all 0.3s ease;
+    }
+    .application-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        cursor: pointer;
+    }
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Dashboard</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'recruiters:dashboard' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'recruiters:profile' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user me-2"></i> Company Profile
+                    </a>
+                    <a href="{% url 'recruiters:job_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-briefcase me-2"></i> Manage Jobs
+                    </a>
+                    <a href="{% url 'recruiters:stats' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-bar me-2"></i> Analytics
+                    </a>
+                </div>
+            </div>
+
+            <!-- Company Card -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-body text-center">
+                    {% if recruiter.company_logo %}
+                        <img src="{{ recruiter.company_logo }}" alt="{{ recruiter.company_name }}" class="img-fluid mb-3" style="max-height: 80px;">
+                    {% else %}
+                        <div class="bg-light d-inline-flex align-items-center justify-content-center rounded mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-building fa-3x text-secondary"></i>
+                        </div>
+                    {% endif %}
+                    <h5>{{ recruiter.company_name }}</h5>
+                    <p class="text-muted">{{ recruiter.user.email }}</p>
+                    <a href="{% url 'recruiters:edit_profile' %}" class="btn btn-sm btn-outline-secondary">Edit Profile</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <!-- Welcome Card -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h4>Welcome, {{ user.get_full_name|default:user.username }}!</h4>
+                    <p class="mb-0">Manage your job postings, review applications, and track hiring metrics all in one place.</p>
+                </div>
+            </div>
+
+            <!-- Summary Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted">Active Jobs</h6>
+                                    <h3>{{ active_jobs_count }}</h3>
+                                </div>
+                                <div class="bg-light rounded-circle p-3">
+                                    <i class="fas fa-briefcase text-success fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted">Total Jobs</h6>
+                                    <h3>{{ total_jobs_count }}</h3>
+                                </div>
+                                <div class="bg-light rounded-circle p-3">
+                                    <i class="fas fa-tasks text-secondary fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted">Applications</h6>
+                                    <h3>{{ application_stats.total }}</h3>
+                                </div>
+                                <div class="bg-light rounded-circle p-3">
+                                    <i class="fas fa-file-alt text-primary fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted">Pending</h6>
+                                    <h3>{{ application_stats.pending }}</h3>
+                                </div>
+                                <div class="bg-light rounded-circle p-3">
+                                    <i class="fas fa-hourglass-half text-warning fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Status Chart -->
+            <div class="row mb-4">
+                <div class="col-lg-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Application Status</h5>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="chartTypeBtn">Toggle Chart Type</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="applicationStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Applications -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Applications</h5>
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control form-control-sm" id="applicationSearch" placeholder="Search applications...">
+                        <select class="form-select form-select-sm" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="PE">Pending</option>
+                            <option value="RV">Reviewing</option>
+                            <option value="AC">Accepted</option>
+                            <option value="RJ">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="applicationsTable">
+                            <thead>
+                                <tr>
+                                    <th data-sort="candidate">Candidate</th>
+                                    <th data-sort="job">Job</th>
+                                    <th data-sort="date">Applied Date</th>
+                                    <th data-sort="status">Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for application in recent_applications %}
+                                <tr class="application-row" data-status="{{ application.status }}">
+                                    <td>
+                                        <div>
+                                            <strong>{{ application.candidate.user.get_full_name|default:application.candidate.user.username }}</strong>
+                                        </div>
+                                        <small class="text-muted">{{ application.candidate.user.email }}</small>
+                                    </td>
+                                    <td>{{ application.job.title }}</td>
+                                    <td>{{ application.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="badge status-badge {% if application.status == 'PE' %}bg-warning{% elif application.status == 'RV' %}bg-info{% elif application.status == 'AC' %}bg-success{% elif application.status == 'RJ' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                            {% if application.status == 'PE' %}Pending
+                                            {% elif application.status == 'RV' %}Reviewing
+                                            {% elif application.status == 'AC' %}Accepted
+                                            {% elif application.status == 'RJ' %}Rejected
+                                            {% else %}Waitlisted{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'recruiters:application_detail' application.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-3">
+                                        <p class="text-muted mb-0">No recent applications</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <a href="{% url 'recruiters:create_job' %}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-plus-circle fa-2x mb-2"></i>
+                                <div>Post New Job</div>
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <a href="{% url 'recruiters:job_list' %}" class="btn btn-outline-secondary w-100 py-3">
+                                <i class="fas fa-list fa-2x mb-2"></i>
+                                <div>View All Jobs</div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{% url 'recruiters:stats' %}" class="btn btn-outline-info w-100 py-3">
+                                <i class="fas fa-chart-line fa-2x mb-2"></i>
+                                <div>View Statistics</div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Application Status Chart
+    const ctx = document.getElementById('applicationStatusChart').getContext('2d');
+    let chartType = 'doughnut';
+    
+    const applicationStatusChart = new Chart(ctx, {
+        type: chartType,
+        data: {
+            labels: ['Pending', 'Reviewing', 'Accepted', 'Rejected'],
+            datasets: [{
+                data: [
+                    {{ application_stats.pending }},
+                    {{ application_stats.reviewing }},
+                    {{ application_stats.accepted }},
+                    {{ application_stats.rejected }}
+                ],
+                backgroundColor: [
+                    '#ffc107',
+                    '#17a2b8',
+                    '#28a745',
+                    '#dc3545'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Toggle Chart Type
+    document.getElementById('chartTypeBtn').addEventListener('click', function() {
+        chartType = chartType === 'doughnut' ? 'bar' : 'doughnut';
+        applicationStatusChart.destroy();
+        applicationStatusChart = new Chart(ctx, {
+            type: chartType,
+            data: {
+                labels: ['Pending', 'Reviewing', 'Accepted', 'Rejected'],
+                datasets: [{
+                    data: [
+                        {{ application_stats.pending }},
+                        {{ application_stats.reviewing }},
+                        {{ application_stats.accepted }},
+                        {{ application_stats.rejected }}
+                    ],
+                    backgroundColor: [
+                        '#ffc107',
+                        '#17a2b8',
+                        '#28a745',
+                        '#dc3545'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    });
+
+    // Application Search and Filter
+    const applicationSearch = document.getElementById('applicationSearch');
+    const statusFilter = document.getElementById('statusFilter');
+    const applicationRows = document.querySelectorAll('.application-row');
+
+    function filterApplications() {
+        const searchTerm = applicationSearch.value.toLowerCase();
+        const statusValue = statusFilter.value;
+
+        applicationRows.forEach(row => {
+            const candidateName = row.querySelector('strong').textContent.toLowerCase();
+            const jobTitle = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            const status = row.dataset.status;
+            
+            const matchesSearch = candidateName.includes(searchTerm) || jobTitle.includes(searchTerm);
+            const matchesStatus = !statusValue || status === statusValue;
+
+            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+    }
+
+    applicationSearch.addEventListener('input', filterApplications);
+    statusFilter.addEventListener('change', filterApplications);
+
+    // Sortable Table
+    const table = document.getElementById('applicationsTable');
+    const headers = table.querySelectorAll('th[data-sort]');
+    let currentSort = {
+        column: null,
+        direction: 'asc'
+    };
+
+    headers.forEach(header => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', () => {
+            const column = header.dataset.sort;
+            const direction = currentSort.column === column && currentSort.direction === 'asc' ? 'desc' : 'asc';
+            
+            // Update sort indicators
+            headers.forEach(h => h.classList.remove('asc', 'desc'));
+            header.classList.add(direction);
+
+            // Sort rows
+            const rows = Array.from(applicationRows);
+            rows.sort((a, b) => {
+                const aValue = a.querySelector(`td:nth-child(${Array.from(header.parentNode.children).indexOf(header) + 1})`).textContent;
+                const bValue = b.querySelector(`td:nth-child(${Array.from(header.parentNode.children).indexOf(header) + 1})`).textContent;
+                
+                return direction === 'asc' ? 
+                    aValue.localeCompare(bValue) : 
+                    bValue.localeCompare(aValue);
+            });
+
+            // Reorder rows in the table
+            const tbody = table.querySelector('tbody');
+            rows.forEach(row => tbody.appendChild(row));
+
+            currentSort = { column, direction };
+        });
+    });
+
+    // Real-time Updates
+    function checkForUpdates() {
+        fetch('{% url "recruiters:dashboard" %}?check_updates=true')
+            .then(response => response.json())
+            .then(data => {
+                if (data.has_updates) {
+                    location.reload();
+                }
+            });
+    }
+
+    // Check for updates every 30 seconds
+    setInterval(checkForUpdates, 30000);
+});
+</script>
+{% endblock %} 

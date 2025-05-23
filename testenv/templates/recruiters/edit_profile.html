@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile - Job Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Dashboard</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'recruiters:dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'recruiters:profile' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-user me-2"></i> Company Profile
+                    </a>
+                    <a href="{% url 'recruiters:job_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-briefcase me-2"></i> Manage Jobs
+                    </a>
+                    <a href="{% url 'recruiters:stats' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-bar me-2"></i> Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Edit Profile</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                        
+                        <!-- Recruiter Information -->
+                        <h5 class="border-bottom pb-2 mb-3">Recruiter Information</h5>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ request.user.first_name }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ request.user.last_name }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ request.user.email }}" readonly>
+                                <small class="text-muted">Email cannot be changed</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone_number" class="form-label">Phone Number</label>
+                                <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ recruiter.phone_number }}">
+                            </div>
+                        </div>
+                        
+                        <!-- Company Information -->
+                        <h5 class="border-bottom pb-2 mb-3">Company Information</h5>
+                        <div class="row mb-4">
+                            <div class="col-12 mb-3">
+                                <label for="company_name" class="form-label">Company Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="company_name" name="company_name" value="{{ recruiter.company_name }}" required>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="company_description" class="form-label">Company Description <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="company_description" name="company_description" rows="4" placeholder="Tell candidates about your company..." required>{{ recruiter.company_description }}</textarea>
+                                <small class="text-muted">Provide a brief description of your company to help candidates learn more about you.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'recruiters:profile' %}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

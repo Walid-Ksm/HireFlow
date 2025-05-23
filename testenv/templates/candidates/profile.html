@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - Job Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Dashboard</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'candidates:dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'candidates:profile' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-user me-2"></i> My Profile
+                    </a>
+                    <a href="{% url 'candidates:applications' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-alt me-2"></i> My Applications
+                    </a>
+                    <a href="{% url 'jobs:job_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-search me-2"></i> Find Jobs
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">My Profile</h5>
+                    <a href="{% url 'candidates:edit_profile' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit me-1"></i> Edit Profile
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Profile Image and Basic Info -->
+                        <div class="col-md-4 text-center mb-4 mb-md-0">
+                            <div class="mb-3">
+                                {% if candidate.profile_image %}
+                                    <img src="{{ candidate.profile_image }}" alt="{{ candidate.user.get_full_name }}" class="img-fluid rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-light d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 150px; height: 150px;">
+                                        <i class="fas fa-user fa-5x text-secondary"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <h4>{{ candidate.user.get_full_name|default:candidate.user.username }}</h4>
+                            {% if candidate.is_email_verified %}
+                                <span class="badge bg-success mb-2"><i class="fas fa-check-circle me-1"></i> Verified</span>
+                            {% else %}
+                                <span class="badge bg-warning mb-2"><i class="fas fa-exclamation-circle me-1"></i> Not Verified</span>
+                            {% endif %}
+                            <p class="text-muted mb-2">{{ candidate.user.email }}</p>
+                            <p class="text-muted mb-0">{{ candidate.phone_number|default:"No phone number" }}</p>
+                        </div>
+                        
+                        <!-- Profile Details -->
+                        <div class="col-md-8">
+                            <div class="border-bottom pb-3 mb-3">
+                                <h5><i class="fas fa-info-circle me-2 text-primary"></i> Basic Information</h5>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <p class="text-muted mb-1">Full Name</p>
+                                        <p class="fw-bold mb-0">{{ candidate.user.get_full_name|default:"Not provided" }}</p>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <p class="text-muted mb-1">Username</p>
+                                        <p class="fw-bold mb-0">{{ candidate.user.username }}</p>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <p class="text-muted mb-1">Email</p>
+                                        <p class="fw-bold mb-0">{{ candidate.user.email }}</p>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <p class="text-muted mb-1">Phone</p>
+                                        <p class="fw-bold mb-0">{{ candidate.phone_number|default:"Not provided" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="border-bottom pb-3 mb-3">
+                                <h5><i class="fas fa-map-marker-alt me-2 text-primary"></i> Address</h5>
+                                <p>{{ candidate.address|default:"No address provided" }}</p>
+                            </div>
+
+                            <div class="border-bottom pb-3 mb-3">
+                                <h5><i class="fas fa-tools me-2 text-primary"></i> Skills</h5>
+                                {% if candidate.skills %}
+                                    <p>{{ candidate.skills }}</p>
+                                {% else %}
+                                    <p class="text-muted">No skills listed</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="border-bottom pb-3 mb-3">
+                                <h5><i class="fas fa-graduation-cap me-2 text-primary"></i> Education</h5>
+                                {% if candidate.education %}
+                                    <p>{{ candidate.education }}</p>
+                                {% else %}
+                                    <p class="text-muted">No education details provided</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="border-bottom pb-3 mb-3">
+                                <h5><i class="fas fa-briefcase me-2 text-primary"></i> Experience</h5>
+                                {% if candidate.experience %}
+                                    <p>{{ candidate.experience }}</p>
+                                {% else %}
+                                    <p class="text-muted">No experience details provided</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="pb-3">
+                                <h5><i class="fas fa-link me-2 text-primary"></i> Links</h5>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <p class="text-muted mb-1">Portfolio</p>
+                                        {% if candidate.portfolio_url %}
+                                            <a href="{{ candidate.portfolio_url }}" target="_blank" class="fw-bold">{{ candidate.portfolio_url }}</a>
+                                        {% else %}
+                                            <p class="fw-bold mb-0">Not provided</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <p class="text-muted mb-1">LinkedIn</p>
+                                        {% if candidate.linkedin_profile %}
+                                            <a href="{{ candidate.linkedin_profile }}" target="_blank" class="fw-bold">{{ candidate.linkedin_profile }}</a>
+                                        {% else %}
+                                            <p class="fw-bold mb-0">Not provided</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resume Card -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Resume</h5>
+                </div>
+                <div class="card-body">
+                    {% if candidate.resume %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-file-pdf fa-2x text-danger me-3"></i>
+                                <span>{{ candidate.resume.name }}</span>
+                            </div>
+                            <div>
+                                <a href="{{ candidate.resume.url }}" class="btn btn-outline-primary btn-sm me-2" target="_blank">
+                                    <i class="fas fa-eye me-1"></i> View
+                                </a>
+                                <a href="{{ candidate.resume.url }}" class="btn btn-outline-success btn-sm" download>
+                                    <i class="fas fa-download me-1"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-upload fa-3x text-muted mb-3"></i>
+                            <p class="mb-3">No resume uploaded yet</p>
+                            <a href="{% url 'candidates:edit_profile' %}" class="btn btn-primary">
+                                <i class="fas fa-upload me-1"></i> Upload Resume
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

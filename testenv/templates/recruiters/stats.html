@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}Recruitment Statistics - Job Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Dashboard</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'recruiters:dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'recruiters:profile' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user me-2"></i> Company Profile
+                    </a>
+                    <a href="{% url 'recruiters:job_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-briefcase me-2"></i> Manage Jobs
+                    </a>
+                    <a href="{% url 'recruiters:stats' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-chart-bar me-2"></i> Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Recruitment Statistics</h5>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <!-- Overall Stats Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <h5 class="text-primary mb-0">{{ overall_stats.total_applications }}</h5>
+                                    <p class="text-muted">Total Applications</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <h5 class="text-success mb-0">{{ overall_stats.total_accepted }}</h5>
+                                    <p class="text-muted">Accepted Candidates</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <h5 class="text-warning mb-0">{{ overall_stats.total_pending }}</h5>
+                                    <p class="text-muted">Pending Applications</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Application Status Distribution -->
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header">
+                            <h6 class="mb-0">Application Status Distribution</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-7">
+                                    <div class="progress" style="height: 25px;">
+                                        {% if overall_stats.total_applications > 0 %}
+                                            {% with pending_percent=overall_stats.total_pending|floatformat:0|default:"0" %}
+                                            {% with reviewing_percent=overall_stats.total_reviewing|floatformat:0|default:"0" %}
+                                            {% with accepted_percent=overall_stats.total_accepted|floatformat:0|default:"0" %}
+                                            {% with rejected_percent=overall_stats.total_rejected|floatformat:0|default:"0" %}
+                                            {% with waitlisted_percent=overall_stats.total_waitlisted|floatformat:0|default:"0" %}
+                                                <div class="progress-bar bg-warning" role="progressbar" style="width: {{ pending_percent }}%">{{ pending_percent }}%</div>
+                                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ reviewing_percent }}%">{{ reviewing_percent }}%</div>
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ accepted_percent }}%">{{ accepted_percent }}%</div>
+                                                <div class="progress-bar bg-danger" role="progressbar" style="width: {{ rejected_percent }}%">{{ rejected_percent }}%</div>
+                                                <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ waitlisted_percent }}%">{{ waitlisted_percent }}%</div>
+                                            {% endwith %}
+                                            {% endwith %}
+                                            {% endwith %}
+                                            {% endwith %}
+                                            {% endwith %}
+                                        {% else %}
+                                            <div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="d-flex flex-column gap-2 mt-3 mt-md-0">
+                                        <div><span class="badge bg-warning me-2">Pending</span> {{ overall_stats.total_pending }}</div>
+                                        <div><span class="badge bg-info me-2">Reviewing</span> {{ overall_stats.total_reviewing }}</div>
+                                        <div><span class="badge bg-success me-2">Accepted</span> {{ overall_stats.total_accepted }}</div>
+                                        <div><span class="badge bg-danger me-2">Rejected</span> {{ overall_stats.total_rejected }}</div>
+                                        <div><span class="badge bg-secondary me-2">Waitlisted</span> {{ overall_stats.total_waitlisted }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Job Statistics Table -->
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h6 class="mb-0">Job-wise Statistics</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if jobs_with_stats %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Job Title</th>
+                                                <th>Applications</th>
+                                                <th>Status</th>
+                                                <th>Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for job in jobs_with_stats %}
+                                            <tr>
+                                                <td>
+                                                    <a href="{% url 'jobs:job_detail' job.id %}" class="text-decoration-none">
+                                                        {{ job.title }}
+                                                    </a>
+                                                </td>
+                                                <td>{{ job.application_count }}</td>
+                                                <td>
+                                                    {% if job.status == 'OP' %}
+                                                        <span class="badge bg-success">Open</span>
+                                                    {% elif job.status == 'CL' %}
+                                                        <span class="badge bg-danger">Closed</span>
+                                                    {% elif job.status == 'DR' %}
+                                                        <span class="badge bg-secondary">Draft</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <small>
+                                                        <span class="text-warning">{{ job.pending_count }} pending</span> • 
+                                                        <span class="text-success">{{ job.accepted_count }} accepted</span> • 
+                                                        <span class="text-danger">{{ job.rejected_count }} rejected</span>
+                                                    </small>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <div class="mb-3">
+                                        <i class="fas fa-chart-bar fa-4x text-muted"></i>
+                                    </div>
+                                    <h4 class="mb-3">No Data Available</h4>
+                                    <p class="text-muted mb-4">You haven't created any job postings yet.</p>
+                                    <a href="{% url 'recruiters:create_job' %}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i> Post New Job
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

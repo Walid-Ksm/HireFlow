@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile - Job Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Dashboard</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'candidates:dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'candidates:profile' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-user me-2"></i> My Profile
+                    </a>
+                    <a href="{% url 'candidates:applications' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-alt me-2"></i> My Applications
+                    </a>
+                    <a href="{% url 'jobs:job_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-search me-2"></i> Find Jobs
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Edit Profile</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                        
+                        <!-- Personal Information -->
+                        <h5 class="border-bottom pb-2 mb-3">Personal Information</h5>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ request.user.first_name }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ request.user.last_name }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ request.user.email }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone_number" class="form-label">Phone Number</label>
+                                <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ candidate.phone_number }}">
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="address" class="form-label">Address</label>
+                                <textarea class="form-control" id="address" name="address" rows="3">{{ candidate.address }}</textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Profile Photo -->
+                        <h5 class="border-bottom pb-2 mb-3">Profile Photo</h5>
+                        <div class="row mb-4">
+                            <div class="col-md-3 text-center mb-3">
+                                {% if candidate.profile_image %}
+                                    <img src="{{ candidate.profile_image }}" alt="Profile Image" class="img-thumbnail rounded-circle mb-2" style="width: 150px; height: 150px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-light d-inline-flex align-items-center justify-content-center rounded-circle mb-2" style="width: 150px; height: 150px;">
+                                        <i class="fas fa-user fa-5x text-secondary"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-9">
+                                <label for="profile_image" class="form-label">Upload Profile Photo</label>
+                                <input type="file" class="form-control" id="profile_image" name="profile_image" accept="image/*">
+                                <small class="text-muted">Recommended size: 300x300 pixels. Max file size: 2MB.</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Resume -->
+                        <h5 class="border-bottom pb-2 mb-3">Resume</h5>
+                        <div class="row mb-4">
+                            <div class="col-12 mb-3">
+                                {% if candidate.resume %}
+                                    <div class="alert alert-info">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-file-pdf fa-2x text-danger me-3"></i>
+                                            <div>
+                                                <p class="mb-0">Current resume: {{ candidate.resume.name }}</p>
+                                                <small>Upload a new file to replace the current one</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                <label for="resume" class="form-label">Upload Resume</label>
+                                <input type="file" class="form-control" id="resume" name="resume" accept=".pdf,.doc,.docx">
+                                <small class="text-muted">Accepted formats: PDF, DOC, DOCX. Max file size: 5MB.</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Professional Information -->
+                        <h5 class="border-bottom pb-2 mb-3">Professional Information</h5>
+                        <div class="row mb-4">
+                            <div class="col-12 mb-3">
+                                <label for="skills" class="form-label">Skills</label>
+                                <textarea class="form-control" id="skills" name="skills" rows="3" placeholder="Enter your skills separated by commas (e.g., Python, JavaScript, Project Management)">{{ candidate.skills }}</textarea>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="education" class="form-label">Education</label>
+                                <textarea class="form-control" id="education" name="education" rows="4" placeholder="Enter your educational background">{{ candidate.education }}</textarea>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="experience" class="form-label">Experience</label>
+                                <textarea class="form-control" id="experience" name="experience" rows="4" placeholder="Enter your work experience">{{ candidate.experience }}</textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Links -->
+                        <h5 class="border-bottom pb-2 mb-3">Links</h5>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="portfolio_url" class="form-label">Portfolio URL</label>
+                                <input type="text" class="form-control" id="portfolio_url" name="portfolio_url" placeholder="https://example.com" value="{{ candidate.portfolio_url }}">
+                                <small class="text-muted">Optional. Leave empty if you don't have a portfolio website.</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="linkedin_profile" class="form-label">LinkedIn Profile</label>
+                                <input type="text" class="form-control" id="linkedin_profile" name="linkedin_profile" placeholder="https://linkedin.com/in/username" value="{{ candidate.linkedin_profile }}">
+                                <small class="text-muted">Optional. Leave empty if you don't want to include your LinkedIn profile.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'candidates:profile' %}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

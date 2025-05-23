@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Job - Job Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Dashboard</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'recruiters:dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'recruiters:profile' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user me-2"></i> Company Profile
+                    </a>
+                    <a href="{% url 'recruiters:job_list' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-briefcase me-2"></i> Manage Jobs
+                    </a>
+                    <a href="{% url 'recruiters:stats' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-bar me-2"></i> Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Edit Job</h5>
+                    <a href="{% url 'recruiters:job_list' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Jobs
+                    </a>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                        
+                        <!-- Job Details -->
+                        <h5 class="border-bottom pb-2 mb-3">Job Details</h5>
+                        <div class="row mb-4">
+                            <div class="col-12 mb-3">
+                                <label for="title" class="form-label">Job Title <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="title" name="title" value="{{ job.title }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="company_name" class="form-label">Company Name</label>
+                                <input type="text" class="form-control" id="company_name" name="company_name" value="{{ job.company_name|default:recruiter.company_name }}">
+                                <small class="text-muted">Leave blank to use your company profile name</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="">Select a category</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}" {% if job.category.id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Job Description -->
+                        <h5 class="border-bottom pb-2 mb-3">Job Description</h5>
+                        <div class="row mb-4">
+                            <div class="col-12 mb-3">
+                                <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="description" name="description" rows="5" required>{{ job.description }}</textarea>
+                                <small class="text-muted">Provide a detailed description of the position</small>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="requirements" class="form-label">Requirements</label>
+                                <textarea class="form-control" id="requirements" name="requirements" rows="5">{{ job.requirements }}</textarea>
+                                <small class="text-muted">List qualifications, skills, and experience required</small>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="responsibilities" class="form-label">Responsibilities</label>
+                                <textarea class="form-control" id="responsibilities" name="responsibilities" rows="5">{{ job.responsibilities }}</textarea>
+                                <small class="text-muted">Describe the key responsibilities of the position</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Job Terms -->
+                        <h5 class="border-bottom pb-2 mb-3">Job Terms</h5>
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <select class="form-select" id="location" name="location">
+                                    <option value="">Select a location or add below</option>
+                                    {% for location in locations %}
+                                        <option value="{{ location.id }}" {% if job.location.id == location.id %}selected{% endif %}>{{ location.city }}, {{ location.country }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="contract_type" class="form-label">Contract Type</label>
+                                <select class="form-select" id="contract_type" name="contract_type">
+                                    {% for type_code, type_name in contract_types %}
+                                        <option value="{{ type_code }}" {% if job.contract_type == type_code %}selected{% endif %}>{{ type_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="city" class="form-label">City</label>
+                                <input type="text" class="form-control" id="city" name="city" value="{% if job.location %}{{ job.location.city }}{% endif %}">
+                                <small class="text-muted">If adding a new location</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="state" class="form-label">State/Province</label>
+                                <input type="text" class="form-control" id="state" name="state" value="{% if job.location %}{{ job.location.state }}{% endif %}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="country" class="form-label">Country</label>
+                                <input type="text" class="form-control" id="country" name="country" value="{% if job.location %}{{ job.location.country }}{% endif %}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="salary_min" class="form-label">Minimum Salary</label>
+                                <input type="number" class="form-control" id="salary_min" name="salary_min" value="{{ job.salary_min }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="salary_max" class="form-label">Maximum Salary</label>
+                                <input type="number" class="form-control" id="salary_max" name="salary_max" value="{{ job.salary_max }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="expiry_date" class="form-label">Expiry Date</label>
+                                <input type="date" class="form-control" id="expiry_date" name="expiry_date" value="{{ job.expiry_date|date:'Y-m-d' }}">
+                                <small class="text-muted">Leave blank for default (30 days)</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">Posting Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="DR" {% if job.status == 'DR' %}selected{% endif %}>Draft</option>
+                                    <option value="OP" {% if job.status == 'OP' %}selected{% endif %}>Open</option>
+                                    <option value="CL" {% if job.status == 'CL' %}selected{% endif %}>Closed</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'recruiters:job_list' %}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Update Job</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

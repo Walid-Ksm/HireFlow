@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Jobs - Job Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Browse Jobs</h1>
+    
+    <div class="row">
+        <!-- Filters sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'jobs:job_list' %}" method="get">
+                        <!-- Category filter -->
+                        <div class="mb-3">
+                            <label for="categoryFilter" class="form-label">Job Category</label>
+                            <select class="form-select" id="categoryFilter" name="category">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Location filter -->
+                        <div class="mb-3">
+                            <label for="locationFilter" class="form-label">Location</label>
+                            <select class="form-select" id="locationFilter" name="location">
+                                <option value="">All Locations</option>
+                                {% for location in locations %}
+                                    <option value="{{ location.id }}" {% if selected_location == location.id %}selected{% endif %}>
+                                        {{ location }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Job type filter -->
+                        <div class="mb-3">
+                            <label for="typeFilter" class="form-label">Job Type</label>
+                            <select class="form-select" id="typeFilter" name="type">
+                                <option value="">All Types</option>
+                                {% for type_code, type_name in contract_types %}
+                                    <option value="{{ type_code }}" {% if selected_type == type_code %}selected{% endif %}>
+                                        {{ type_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Apply filters button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Apply Filters</button>
+                        </div>
+                        
+                        <!-- Clear filters link -->
+                        {% if selected_category or selected_location or selected_type %}
+                            <div class="text-center mt-2">
+                                <a href="{% url 'jobs:job_list' %}" class="text-secondary">
+                                    <small>Clear Filters</small>
+                                </a>
+                            </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Job listings -->
+        <div class="col-lg-9">
+            {% if jobs %}
+                <p class="mb-4">Showing {{ jobs|length }} job{% if jobs|length != 1 %}s{% endif %}</p>
+                
+                <div class="job-listings">
+                    {% for job in jobs %}
+                        <div class="card mb-3 job-listing-item">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-9">
+                                        <h5 class="card-title">
+                                            <a href="{% url 'jobs:job_detail' job.id %}" class="text-decoration-none">{{ job.title }}</a>
+                                        </h5>
+                                        <h6 class="card-subtitle mb-2 text-muted">{{ job.company_name }}</h6>
+                                        
+                                        <div class="mb-3">
+                                            <span class="badge bg-primary me-2">{{ job.get_contract_type_display }}</span>
+                                            {% if job.category %}
+                                                <span class="badge bg-secondary me-2">{{ job.category.name }}</span>
+                                            {% endif %}
+                                            
+                                            {% if job.location %}
+                                                <span class="text-muted">
+                                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                                    {{ job.location }}
+                                                </span>
+                                            {% endif %}
+                                            
+                                            {% if job.salary_min and job.salary_max %}
+                                                <span class="text-muted ms-3">
+                                                    <i class="fas fa-money-bill-wave me-1"></i>
+                                                    ${{ job.salary_min|floatformat:0 }} - ${{ job.salary_max|floatformat:0 }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <p class="card-text">{{ job.description|truncatechars:150 }}</p>
+                                    </div>
+                                    <div class="col-md-3 text-md-end d-flex flex-column justify-content-between">
+                                        <div>
+                                            <small class="text-muted">
+                                                <i class="far fa-clock me-1"></i>
+                                                Posted {{ job.created_at|timesince }} ago
+                                            </small>
+                                        </div>
+                                        <div class="mt-auto">
+                                            <a href="{% url 'jobs:job_detail' job.id %}" class="btn btn-outline-primary mt-2">View Details</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No jobs available based on your filters. Try adjusting your search criteria.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
